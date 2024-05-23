@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+    {{ title }}
+{% endblock title %}
+
+{% block css_files %}
+<link rel="stylesheet" href="{% static "book_outlet/book-detail.css" %}">
+{% endblock css_files %}
+
+{% block content %}
+    <h1>{{ title }}</h1>
+    <h2>{{ author }}</h2>
+    <p>The book has a rating of {{ rating }}
+        {% if is_bestselling %}
+            and is a bestseller.
+        {% else %}
+            but isn't a bestseller.
+        {% endif %}
+    </p>
+{% endblock content %}
