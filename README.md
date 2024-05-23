@@ -1,3 +1,3 @@
 # Book Outlet Project
-First attempt at creating SQLite DB in Django
+First attempt at creating SQLite DB in Django__
 Basic front-end templates with no styling
