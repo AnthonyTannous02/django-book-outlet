@@ -11,23 +11,102 @@ from django.utils.text import slugify
 # python manage.py makemigrations
 # python manage.py migrate
 
+class Country(models.Model):
+    name = models.CharField(max_length=80)
+    code = models.CharField(max_length=2)
+    
+    def __str__(self):
+        return f"{self.name}, {self.code}"
+    
+    class Meta:
+        verbose_name_plural = "Countries"
+
+
+### Adding Many to Many Relationships and working with them
+# >>> germany = Country(name="Germany", code="DE")
+# >>> mys = Book.objects.all()[0]
+# >>> germany.save()
+# >>> mys.published_countries.add(germany)
+# >>> mys.published_countries.all()
+# <QuerySet [<Country: Country object (1)>]>
+
+
+class Address(models.Model):
+    street = models.CharField(max_length=80)
+    postal_code = models.CharField(max_length=5)
+    city = models.CharField(max_length=50)
+    
+    def __str__(self):
+        return f"{self.street}, {self.postal_code}, {self.city}"
+    
+    class Meta:
+        verbose_name_plural = "Addresses"
+
+
+### Connect One to One
+# >>> jkr.address = addr1
+
+
+class Author(models.Model):
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    address = models.OneToOneField(Address, on_delete=models.CASCADE, null=True) # Reverse relationship will be by default "author"
+    
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
+
+
+### Query relationship data
+
+# >>> harrypotter = Book.objects.get(title="Harry Potter 1")
+# >>> harrypotter
+# <Book: Harry Potter 1 (5)>
+# >>> harrypotter.author
+# <Author: Author object (1)>
+# >>> harrypotter.author.first_name 
+# 'J.K.'
+# >>> harrypotter.author.last_name 
+# 'Rowling'
+
+# >>> books_by_rowling = Book.objects.filter(author__last_name="Rowling")
+# >>> books_by_rowling
+# <QuerySet [<Book: Harry Potter 1 (5)>]>
+
+# >>> books_by_rowling = Book.objects.filter(author__last_name__contains="ling")
+# >>> books_by_rowling
+# <QuerySet [<Book: Harry Potter 1 (5)>]>
+
+
+### Reverse Relationships
+
+# >>> jkr = Author.objects.get(first_name="J.K.")
+# >>> jkr
+# <Author: J.K. Rowling>
+# >>> jkr.book_set
+# <django.db.models.fields.related_descriptors.create_reverse_many_to_one_manager.<locals>.RelatedManager object at 0x000001D87B0C3E50>
+# >>> jkr.book_set.all()
+# <QuerySet [<Book: Harry Potter 1 (5)>]>
+# >>> jkr.book_set.filter(rating__gt=3)
+
 
 class Book(models.Model):
     title = models.CharField(max_length=50)
     rating = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)]
-        )
-    author = models.CharField(null=True, max_length=100)
+    )
+    author = models.ForeignKey(Author, on_delete=models.CASCADE, null=True, related_name="books") # Related Name helps access the reverse relationship faster (instead of book_set)
     is_bestselling = models.BooleanField(default=False)
-    slug = models.SlugField(default="", null=False, db_index=True) # harry-potter-1
+    slug = models.SlugField(default="", blank=True, null=False, db_index=True) # harry-potter-1
     # Creating an index will make searching for that field faster
+    published_countries = models.ManyToManyField(Country) # Cant add on_delete
     
     def get_absolute_url(self):
         return reverse("book-detail", args=[self.slug])
     
-    def save(self, *args, **kwargs):
-        self.slug = slugify(self.title)
-        super().save(*args, **kwargs)
+    ## Not needed with admin panel prepopulation configuration
+    # def save(self, *args, **kwargs):
+    #     self.slug = slugify(self.title)
+    #     super().save(*args, **kwargs)
     
     def __str__(self):
         return f"{self.title} ({self.rating})"
